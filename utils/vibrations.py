@@ -1,5 +1,7 @@
-import string,sys,math
-from mol_assign import *
+import string
+import math
+import utils.constants as cnst
+from utils.molecule import Molecule
 
 class VibAll(object):
     def __init__(self, vibfile='nmodes.inp', prog=' ',nrsfile=' '):
@@ -10,36 +12,30 @@ class VibAll(object):
             self.get_nrs(nrsfile)
 
     # Get all vibrational information
-    def get_modes(self, vibfile, prog=' '):
-        print prog
-        if 'man' not in prog:
-            mfile = open(vibfile,'r')
-            mline = mfile.readline()
-            nmodes = 0
-            while len(mline) > 0:
-                line = mline.split()
-                curr_modes = len(line)
-                for i in range(0,curr_modes):
-                    self.modes.append(Vib(float(line[i]),nmodes+i+1))
-                    # Temp edit for R6G
-                    #self.modes.append(Vib(float(line[i]),nmodes+i+32))
+    def get_modes(self, vibfile):
+        mfile = open(vibfile,'r')
+        mline = mfile.readline()
+        nmodes = 0
+        while len(mline) > 0:
+            line = mline.split()
+            curr_modes = len(line)
+            for i in range(0,curr_modes):
+                self.modes.append(Vib(float(line[i]),nmodes+i+1))
+                # Temp edit for R6G
+                #self.modes.append(Vib(float(line[i]),nmodes+i+32))
                 
+            mline = mfile.readline()
+            mline = mfile.readline()
+            while len(mline) > 10:
+                line = mline.split()
+                for i in range(0,curr_modes):
+                    self.modes[nmodes+i].add_disp([float(line[i*3+1]),float(line[i*3+2]),float(line[i*3+3])])
                 mline = mfile.readline()
-                mline = mfile.readline()
-                while len(mline) > 10:
-                    line = mline.split()
-                    for i in range(0,curr_modes):
-                        self.modes[nmodes+i].add_disp([float(line[i*3+1]),float(line[i*3+2]),float(line[i*3+3])])
-                    mline = mfile.readline()
-                nmodes += curr_modes
-                mline = mfile.readline()
-                mline = mfile.readline()
-            mfile.close()
-            print 'Modes ',len(self.modes),self.modes[0].index,self.modes[-1].index
-
-        else:
-            self.modes.append(Vib(1000.0,1))
-            print 'Manual modes'
+            nmodes += curr_modes
+            mline = mfile.readline()
+            mline = mfile.readline()
+        mfile.close()
+        print('Modes ',len(self.modes),self.modes[0].index,self.modes[-1].index)
 
     # Read S factors from nrs file
     def get_nrs(self, nrsfile):
@@ -66,7 +62,7 @@ class VibAll(object):
             if len(nline) == 0 or 'A D F   E X I T' in nline:
                 read = True
         nrs.close()
-        print 'Modes ',len(self.modes),self.modes[0].index,self.modes[-1].index
+        print('Modes ',len(self.modes),self.modes[0].index,self.modes[-1].index)
 
 
 class Vib(object):
@@ -102,7 +98,7 @@ class Vib(object):
     # Compute the normalized derivative of alpha
     def alpha_slope(self, outfilename, disp_str, omega=0.0, gamma=0.1088j, states=0, gamma2=0.0, types=[], usefreq=False, modefreq=0.0):
         if self.norm == 0.0:
-            print 'Error: Must compute norms of vibrational modes before polarizability derivatives'
+            print('Error: Must compute norms of vibrational modes before polarizability derivatives')
         
         # Matches ds in Jensen code
         ds = float(disp_str)/(math.sqrt(self.norm)*cnst.bohr2ang)
@@ -110,11 +106,11 @@ class Vib(object):
 
         # Compute the displaced polarizabilities
         try:
-            out_minus, prog = open_mol(outfilename+'_'+str(self.index)+'_-'+disp_str+'.out')
-            out_plus,  prog = open_mol(outfilename+'_'+str(self.index)+'_' +disp_str+'.out')
+            out_minus, prog = Molecule(outfilename+'_'+str(self.index)+'_-'+disp_str+'.out')
+            out_plus,  prog = Molecule(outfilename+'_'+str(self.index)+'_' +disp_str+'.out')
         except IOError:
-            out_minus, prog = open_mol('mode'+str(self.index)+'-'+disp_str+'.out')
-            out_plus,  prog = open_mol('mode'+str(self.index)+'+'+disp_str+'.out')
+            out_minus, prog = Molecule('mode'+str(self.index)+'-'+disp_str+'.out')
+            out_plus,  prog = Molecule('mode'+str(self.index)+'+'+disp_str+'.out')
 
         alpha_minus = out_minus.compute_alpha(omega, gamma, states, False, gamma2, types, usefreq, modefreq)
         alpha_plus  =  out_plus.compute_alpha(omega, gamma, states, False, gamma2, types, usefreq, modefreq)
@@ -201,6 +197,4 @@ class Vib(object):
             self.crs_tot.append(self.crs_real[k] + self.crs_imag[k])
 
         #print string.rjust(str(self.index),3), self.crs_real
-
-
 

@@ -1,84 +1,95 @@
-#!/usr/bin/python
-
 #-------------------------------------------------------------------------
 # Compute Raman cross-sections from changes to the INDO/CI static 
-# polarizabilities with geometric displacement along DFT normal modes
+# polarizabilities with geometric displacement along normal modes 
+# from another level of theory
 #
-# Replicate the math from Lasse Jensen's script ramanscat.f90
+# By default, the Raman intensities are computed using all excited
+# states in the INDO/CI output.
 #
-# Version 2.0
-#
-# Rebecca Gieseking, 1/6/2017
+# Alternatively, the Raman intensities may be computed using a series of
+# numbers of excited states, then averaging. This can be useful when the 
+# system is so large that the SOS expression is not fully converged.
 # 
 #-------------------------------------------------------------------------
 
 import string,sys,math
-import constants as cnst
-from mol_assign import *
-from vibrations import *
+from utils.molecule import Molecule
+from utils.vibrations import VibAll
 import getopt
 
-# Constants for later
+# Default values for inputs
+infilename = ''
 types = []
 omega = 0.0
-usefreq = False
 gamma = 0.1088j
 disp_str = '0.01'
 disp = float(disp_str)
 coord = ''
-states = 0
-width = 20.0
-scale = 1E+34
-prog = ' '
-gamma2 = 0.0
-tfilename = 'types'
-nrsfile = ' '
-
+nstates = 0
+nstatesmin, nstatesmax, nstatesstep = None, None, None
+avg = False
 vmin = 350
 vmax = 2500
 
+# Constants for later
+width = 20.0
+scale = 1E+34
+afac = width/(2.0*math.pi)
+bfac = width/2.0
+
+
+
 helpfile = """
-indo_raman.py -i <inputfile> -o <outputfile> -w <omega> -f <usefreq> -g <gamma> -b <gamma2> -t <types> -d <displacement> -c <coordinate> -s <# states> -n <nrsfile> -z <program>
+raman.py -i <inputfile> -o <outputfile> -e <energy> -g <gamma> -d <displacement> -c <coordinate> -n <nrsfile> -z <program>
 
-    -i    Base file name for input and output (must be included)
-    -o    Base file name for all output files, if different from input
+Required:
+    -i    Base file name for input file
+          NOTE: The script automatically attempts to remove file extensions, 
+                starting with the final "." in the file name. If your file name 
+                includes periods besides the one before the extension, use the
+                full file name (including the extension) here. If not, either 
+                the full file name or the base without the extension works. 
+                The script will try to append a .log or .out extension for the
+                MOPAC output file.
+    
 
-    -w    Energy at which polarizabilities are computed (eV)        Default = 0.0
-    -f    Include vibrational mode frequency in alpha energy        Default = False
-    -g    Lifetime (broadening) for polarizabilities (eV)           Default = 0.1088j (= 0.004 a.u.)
-    -d    Displacement of geometries along vibrational modes (A)    Default = 0.01
-    -c    Coordinate along which to compute Raman intensities       Default = isotropic (alternatives x, y, z)
-    -b    Lifetime of excited states of specific types (eV)         Default = 0.0 (= not used)
-    -t    Types file, for used with -b. Only first type used.       Default = types
-          Format:
-             Atom    20               From atoms 1-20 to 21-max
-             Attype  Ag               From Ag atoms to all other atoms
-             Orbtype Ag D             From Ag D to all others
-             Orb     D                From all D orbitals to all others
+Optional:
+    -o    Base file name for output file                          Default = matches -i
+    -e    Energy at which Raman intensities are computed (eV)     Default = 0.0
+    -g    Lifetime (broadening) for polarizabilities (eV)         Default = 0.1088 (= 0.004 a.u.)
+    -d    Displacement of geometries along vibrational modes (A)  Default = 0.01
+    -c    Coordinate along which to compute Raman intensities     Default = isotropic (alternatives are x, y, z)
+    -n    Number of states to include in SOS expression           Default = All states
+    -f    Minimum vibrational frequency of modes to use (cm-1)    Default = 350
+    -v    Maximum vibrational frequency of modes to use (cm-1)    Default = 2500
 
-    -s    Number of states to include in SOS expression             Default = All states
-    -n    If S factors already computed, file containing those      Default = none
-
-    -z    Program generating output (Mopac, ADF, Qchem, etc.)       Default = Determine automatically
+To compute the Raman intensities averaged over a series of numbers of excited states
+instead of one number, use the following options. If one is used, all must be used.
+This option is sometimes useful for large systems where the Raman intensities are 
+not fully converged with respect to the number of states in the SOS expression.
+    -m    Minimum number of excited states to include in SOS expression
+    -x    Maximum number of excited states to include in SOS expression
+    -s    Step size in number of excited states to include in SOS expression
 """
 
 # Parse input options
 try:
-    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:w:f:g:b:t:d:c:s:n:z:",['--help','--input=','--output=','--omega=','--usefreq=','--gamma=','--gamma2=','--types=','--disp=','--coord=','--states=','--nrsfile=','--program='])
+    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:e:g:d:c:f:v:m:x:s:",[
+        '--help','--input=','--output=','--energy=','--gamma=',
+        '--disp=','--coord=','--nstates=','--freqmin=', '--freqmax=',
+        '--nstatesmin=','--nstatesmax=','--nstatesstep='])
 except getopt.GetoptError as err:
-    print str(err)
-    print helpfile
+    print(str(err))
+    print(helpfile)
     sys.exit(2)
-
 if remainder != []:
-    print "Error: options not read - %r" % remainder
-    print helpfile
+    print("Error: options not read - %r" % remainder)
+    print(helpfile)
     sys.exit(2)
-
 
 for opt, arg in options:
     if opt in ('-h','--help'):
-        print helpfile
+        print(helpfile)
         sys.exit(2)
     elif opt in ('-i','--input'):
         if '.' in arg:
@@ -89,63 +100,90 @@ for opt, arg in options:
         if '.' in arg:
             arg = arg[:arg.rfind('.')]
         outfilename = arg
-    elif opt in ('-w','--omega'):
+    elif opt in ('-e','--energy'):
         omega = float(arg)
-    elif opt is ('-f','--usefreq='):
-        if arg.lower() in ('true','t','yes','y','1'):
-            usefreq = True
     elif opt in ('-g','--gamma'):
         gamma = complex(0.0,float(arg))
-    elif opt in ('-b','--gamma2'):
-        gamma2 = complex(0.0,float(arg))
-    elif opt in ('-t','--types'):
-        tfilename = arg
     elif opt in ('-d','--disp'):
-        disp_str = arg
         disp = float(arg)
     elif opt in ('-c','--coord'):
         coord = arg
-    elif opt in ('-s','--states'):
-        states = int(arg)
-    elif opt in ('-n','--nrsfile'):
-        nrsfile = arg
-    elif opt in ('-z','--program'):
-        prog = arg.lower()
+    elif opt in ('-n','--nstates'):
+        nstates = int(arg)
+    elif opt in ('-f','--freqmin'):
+        vmin = float(arg)
+    elif opt in ('-v','--freqmax'):
+        vmax = float(arg)
+    elif opt in ('-m','--nstatesmin'):
+        nstatesmin = int(arg)
+    elif opt in ('-x','--nstatesmax'):
+        nstatesmax = int(arg)
+    elif opt in ('-s','--nstatesstep'):
+        nstatesstep = int(arg)
 
-types = read_types(tfilename)
+out = Molecule(infilename)
 
-out, prog = open_mol(infilename, prog)
-afac = width/(2.0*math.pi)
-bfac = width/2.0
+if nstatesmin and nstatesmax and nstatesstep:
+    avg = True
+    states = range(nstatesmin, nstatesmax, nstatesstep)
+elif nstatesmin or nstatesmax or nstatesstep:
+    if nstatesmin:
+        nstates = nstatesmin
+    elif nstatesmax: 
+        nstates = nstatesmax
+    print("Error: To average over a range of states, the min, max, and step size must all be specified")
+    print("Continuing by using one value for number of states, ", nstates)
+    states = [nstates]
+else:
+    states = [nstates]
 
 # Get basic info
-out.read_atoms()
-vibs = VibAll(prog=prog,nrsfile=nrsfile)
-for i in range(0,len(vibs.modes)):
-    v = vibs.modes[i]
-    if v.freq > vmin and v.freq < vmax:
-        #print i+1, v.freq
-        if nrsfile == ' ':
-            #print 'Mode ',v.freq
-            v.norm_mode(out.atoms)
-            #print v.index, v.freq, v.norm
-            v.alpha_slope(outfilename,disp_str,omega,gamma,states,gamma2,types,usefreq,v.freq)
-            #adiff_or = (alpha_diff[0][0] + alpha_diff[1][1] + alpha_diff[2][2]) / 3.0
-            #print adiff_or.real, adiff_or.imag, abs(adiff_or)
-            v.raman_scat(coord)
-        v.raman_cross(omega)
-        print v.crs_tot[0]*scale*afac/bfac**2
 
-# Write stick spectrum
-stick = open(outfilename+'.raman_stick_'+str(omega)+'_'+str(states),'w')
+crs_avg = []
+out.read_atoms()
+vibs = VibAll()
 for v in vibs.modes:
     if v.freq > vmin and v.freq < vmax:
-        stick.write(string.rjust('%.3f'%v.freq,10))
-        for k in v.crs_tot:
-            stick.write(string.rjust(str(k*scale*afac/bfac**2),20)) 
-        stick.write('\n')
-        #print v.crs_tot[0]*scale*afac/bfac**2, v.crs_real[0]*scale*afac/bfac**2, v.crs_imag[0]*scale*afac/bfac**2
-        #print v.crs_tot[0]*scale*afac/bfac**2
+        crs_list = []
+        ls = ''
+        for s in states:
+            if s == states[0]: v.norm_mode(out.atoms)
+            v.alpha_slope(outfilename,disp_str,omega,gamma,s)
+            v.raman_scat(coord)
+            v.raman_cross(omega)
+            crs_list.append(v.crs_tot[0])
+            ls += string.rjust(str(v.crs_tot[0]*scale*afac/bfac**2),17) + ' '
+
+        # Find avg and stdev
+        if avg and len(states) > 1:
+            mean = 0.0
+            stdev = 0.0
+            for i in crs_list:
+                mean += i
+            mean /= len(crs_list)
+            for i in crs_list:
+                stdev += (i - mean)**2
+            stdev /= len(crs_list)-1
+            stdev = math.sqrt(stdev)
+            #print ls
+            if mean > 0.0 and stdev/mean > 0.33:
+                print(v.index, v.freq, mean*scale*afac/bfac**2, stdev*scale*afac/bfac**2, stdev/mean)
+                print(ls)
+            else:
+                print(v.index, v.freq, mean*scale*afac/bfac**2, stdev*scale*afac/bfac**2)
+            crs_avg.append([v.freq,mean,stdev]) 
+        else:
+            print(v.index, v.freq, crs_list[0]*scale*afac/bfac**2)
+            crs_avg.append([v.freq]) 
+
+# Write stick spectrum
+stick = open(outfilename+'.raman_stick_'+str(omega)+'_avg','w')
+for k in crs_avg:
+    stick.write(string.rjust('%.3f'%k[0],10))
+    if len(k) > 1:
+        stick.write(string.rjust(str(k[1]*scale*afac/bfac**2),20) + string.rjust(str(k[2]*scale*afac/bfac**2),20)) 
+    stick.write('\n')
+    #print k[1]*scale*afac/bfac**2, k[2]*scale*afac/bfac**2
 stick.close()
 
 # Set up array of zeros for spectrum
@@ -155,9 +193,6 @@ freq_step = 1.0
 spectrum = []
 for i in range(0,int((freq_max - freq_min)/freq_step + 1)):
     spectrum.append([0.0,0.0,0.0])
-
-afac = width/(2.0*math.pi)
-bfac = width/2.0
 
 # Compute lorentzian-broadened spectrum
 for v in vibs.modes:
