@@ -37,8 +37,6 @@ scale = 1E+34
 afac = width/(2.0*math.pi)
 bfac = width/2.0
 
-
-
 helpfile = """
 raman.py -i <inputfile> -o <outputfile> -e <energy> -g <gamma> -d <displacement> -c <coordinate> -n <nrsfile> -z <program>
 
