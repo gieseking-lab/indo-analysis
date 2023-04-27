@@ -1,0 +1,97 @@
+INDO analysis scripts for MOPAC2016
+Rebecca Gieseking, 2023
+
+In summer 2020, with the help of James Stewart, I incorporated INDO/CI into the public release of 
+MOPAC2016. This repository contains several useful analysis scripts for INDO/CI calculations.
+
+
+Background:
+The INDO/S Hamiltonian (also called ZINDO) was parametrized specifically for excited-state 
+properties. Although there are several variations of the INDO/S parameters available, the default
+parameters in MOPAC2016 are the ones from Jeffrey Reimers's CNDO/INDO code. Because the INDO/S
+parameters are intended for excited states, geometry optimizations were not implemented. More 
+details on the code are available in the MOPAC2016 manual at http://openmopac.net/manual/
+
+The INDO/S excited states are computing using configuration interaction (CI), with single 
+excitations (CIS), single and double excitations (CISD), or using multiple reference determinants
+(MRCI).
+
+
+Useful links:
+http://openmopac.net/manual/ - MOPAC2016 manual containing all keywords
+http://openmopac.net/manual/INDO_Examples.html - Examples of typical INDO input and output files
+https://doi.org/10.1002/jcc.26455 - Publication showing the use of this code for molecular
+  orbitals, excited states with significant double-excitation contributions, solvatochromic shifts,
+  and nonlinear optical properties.
+
+
+Analysis scripts:
+This repository contains several Python3 analysis scripts for INDO/CI output files:
+  absorption.py       Computes a Lorentzian-broadened absorption spectrum.
+  cubegen.py          Computes cube files in Gaussian .cub format for visualization of molecular
+                       orbitals, transition densities, and changes in electron density.
+  displace.py         Outputs a geometry displaced along a normal mode. Requires an equilibrium
+                       geometry and normal modes from another level of theory.
+  polarizability.py   Computes the polarizability of the system.
+  raman.py            Computes the frequency-specific Raman intensity of vibrational modes. 
+                       Requires outputs from the equilibrium geometry and geometries displaced
+                       along the desired normal modes.
+
+All scripts have the following options:
+  -h, --help          Prints a help file with options specific to that script
+  -i, --input         (Required) Base file name of the MOPAC .mop or .out file
+                      NOTE: The scripts automatically attempt to remove file extensions,
+                         starting with the final "." in the file name. If your file name
+                         includes periods besides the one before the extension, use the
+                         full file name (including the extension) here. If not, either
+                         the full file name or the base without the extension works.
+                         Scripts that use MOPAC output files will append a .out extension,
+                         and scripts that use MOPAC input files will append a .mop extenstion.
+
+  -o, --output        Base name of the output files. 
+                      Default: Uses the base name from -i
+
+Usage of specific scripts:
+
+absorption.py
+Computes a Lorentzian-broadened absorption spectrum. The script can also compute the contribution
+of transitions from one group of atomic orbitals to all other orbitals to the total absorption
+spectrum. This may be useful for computing things like charge-transfer character between different
+parts of the system, but can also be used for different elements or types of atomic orbitals
+
+Specific options:
+  -e, --energy        Maximum energy of absorption spectrum (eV)       Default = 8.0
+  -s, --step          Step size for absorption spectrum (eV)           Default = 0.02
+  -g, --gamma         Gamma (Lorentzian broadening factor)             Default = 0.1088 eV (= 0.004 au)
+  -t, --types         Types file name. This enables decomposition of the total absorption
+                      spectrum into contributions from various components in the system.
+                      Default = compute the absorption spectrum only, no types
+                      Format:
+                        Atom    1 20             #From atoms 1-20 to 21-max
+                        Attype  Ag               #From Ag atoms to all other atoms
+                        Orbtype Ag D             #From Ag D to all others
+                        Orb     D                #From all D orbitals to all others
+                      Multiple types may be included in the types file.
+
+Output files:
+1. file.orb:   Includes a list of molecular orbital energies. If types are used, includes the 
+                percent contribution of each type to that molecular orbital.
+2. file.osc:   Includes a list of excited-state energies and oscillator strengths. If types are 
+                used, includes the change in contribution from each type. For example, if a  
+                particular system is excited from an occupied orbital with 90% contribution from C 
+                to a virtual orbital with 70% contribution from C, the type Attype C would give 
+                (0.7 - 0.9) = -0.2 for that excited state.
+3. file.sigma: Includes the Lorentzian-broadened absorption spectrum. If types are used, includes
+                spectra weighted by the change in types from the .osc file. The weighted spectra
+                are computed as a product of the absorption intensity of each state with its change
+                in type contribution. States with positive types values in .osc are included in the
+                "To type x" spectrum (indicating that the contribution of the type of interest 
+                increases when exciting to that state), and states with negative values are 
+                included in the "From type x" spectrum.
+
+
+
+
+
+
+

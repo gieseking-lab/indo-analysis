@@ -24,13 +24,14 @@ Required:
                 includes periods besides the one before the extension, use the
                 full file name (including the extension) here. If not, either 
                 the full file name or the base without the extension works. 
-                The script will try to append a .log or .out extension for the
+                The script will try to append a .out extension for the
                 MOPAC output file.
 
 Optional:
     -o    Base file name for output file                   Default = matches -i
     -e    Maximum energy of absorption spectrum (eV)       Default = 8.0
     -s    Step size for absorption spectrum (eV)           Default = 0.02
+    -g    Gamma (Lorentzian broadening factor)             Default = 0.1088 eV (= 0.004 au)
     
     -t    Types file name. This enables decomposition of the total absorption 
           spectrum into contributions from various components in the system.
@@ -45,7 +46,7 @@ Optional:
 
 # Parse input options
 try:
-    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:e:s:t:",['--help','--input=','--output=','--energy=','--step=','--type='])
+    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:e:s:g:t:",['--help','--input=','--output=','--energy=','--step=','--gamma=','--type='])
 except getopt.GetoptError as err:
     print(str(err))
     print(helpfile)
@@ -74,6 +75,8 @@ for opt, arg in options:
         max_e = float(arg)
     elif opt in ('-s','--step'):
         e_step = float(arg)
+    elif opt in ('-g','--gamma'):
+        gamma = float(arg)
     elif opt in ('-t','--type'):
         tfilename = arg
 

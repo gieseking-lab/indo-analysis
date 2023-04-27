@@ -7,7 +7,7 @@ class VibAll(object):
     def __init__(self, vibfile='nmodes.inp', prog=' ',nrsfile=' '):
         self.modes = []
         if nrsfile == ' ':
-            self.get_modes(vibfile, prog)
+            self.get_modes(vibfile)
         else:
             self.get_nrs(nrsfile)
 

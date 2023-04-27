@@ -38,7 +38,7 @@ afac = width/(2.0*math.pi)
 bfac = width/2.0
 
 helpfile = """
-raman.py -i <inputfile> -o <outputfile> -e <energy> -g <gamma> -d <displacement> -c <coordinate> -n <nrsfile> -z <program>
+raman.py -i <inputfile> -o <outputfile> -e <energy> -g <gamma> -d <displacement> -c <coordinate> -n <nrsfile> -f <minfreq> -v <maxfreq> -n <nstates> -m <min_nstates> -x <max_nstates> -s <step_nstates>
 
 Required:
     -i    Base file name for input file
