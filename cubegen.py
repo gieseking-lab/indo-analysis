@@ -5,11 +5,11 @@
 #-------------------------------------------------------------------------
 
 import sys
-from molecule import Molecule
+from utils.molecule import Molecule
 import getopt
-import cubeutils
-import constants as cnst
-import param
+import utils.cubeutils as cubeutils
+import utils.constants as cnst
+import utils.param as param
 
 #########################
 # Start of main program #
@@ -141,15 +141,22 @@ if dtype == 0:
             mo_max = int(amax[1:]) + out.homo - 1
         else:
             mo_max = int(amax[1:]) + out.homo
+    if mo_max < mo_min:
+        mo_max = mo_min
 elif dtype < 3:
     out.read_configs()
     config_min = int(amin)
     config_max = int(amax)
+    if config_max < config_min:
+        config_max = config_min
 else:
     out.read_configs()
     out.read_states()
     ex_min = int(amin)
     ex_max = int(amax)
+    if ex_max < ex_min:
+        ex_max = ex_min
+
 
 # Find the number of voxels in each dimension and offset the molecule appropriately
 nvox, minxyz = cubeutils.get_vnum(out.atoms, gap, extra)
@@ -163,10 +170,10 @@ print('Number of voxels: ',nvox)
 #   dtype=3    trans     Compute an excited state transition density
 #   dtype=4    exc       Compute the change in density upon excitation to an excited state
 if dtype == 0:
-    for mo_curr in range(mo_min,mo_max+1):
+    for mo_curr in range(mo_min-1,mo_max):
         vox = cubeutils.gen_cube_orb(mo_curr, out.at_types, out.atoms, out.mos, 
                                      par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(infilename, dtype, mo_curr, vox, out.atoms, out.at_types, 
+        cubeutils.write_cub(infilename, dtype, mo_curr+1, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 elif dtype == 1:
     for config_curr in range(config_min,config_max+1):
@@ -183,13 +190,13 @@ elif dtype == 2:
                             par.params, nvox, minxyz, gap)
 elif dtype == 3:
     for ex_curr in range(ex_min,ex_max+1):
-        vox = cubeutils.gen_cube_trans(config_curr, out.at_types, out.atoms, out.mos, out.configs, 
+        vox = cubeutils.gen_cube_trans(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
                                        out.states, par.params, extra, nvox, minxyz, gap)
         cubeutils.write_cub(infilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 else:
     for ex_curr in range(ex_min,ex_max+1):
-        vox = cubeutils.gen_cube_exc(config_curr, out.at_types, out.atoms, out.mos, out.configs, 
+        vox = cubeutils.gen_cube_exc(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
                                        out.states, par.params, extra, nvox, minxyz, gap)
         cubeutils.write_cub(infilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)

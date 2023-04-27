@@ -3,7 +3,7 @@
 #                                                              #
 ################################################################
 
-import constants as cnst
+import utils.constants as cnst
 import math
 
 # Get the number of voxels
@@ -97,13 +97,13 @@ def get_rycoeff(aotype, at_par,acoord,vcoord):
 
 # Generate the cube values for a molecular orbital
 def gen_cube_orb(mo, at_types, atoms, mos, params, extra, nvox, minxyz, gap):
-    print('Generating cube for molecular orbital ', mo)
+    print('Generating cube for molecular orbital ', mo+1)
 
     vox = build_vox(nvox)
     a = 0
     # Loop over atoms
     for m in atoms:
-        print('  Atom ',atoms.index(m))
+        print('  Atom ',atoms.index(m)+1)
         minvox, maxvox = get_vrange(m, extra, nvox, minxyz, gap)
         at_index = at_types.index(m.elem)
         for orb in m.aotype:
@@ -122,14 +122,18 @@ def gen_cube_ctrans(config, at_types, atoms, mos, configs, params, extra, nvox, 
     vox = build_vox(nvox)
 
     # Set up for single excitations only
-    occ = configs[config-1].occ[0]-1
-    vir = configs[config-1].vir[0]-1
-    print(occ,vir)
+    occ = configs[config-1].occ[0]
+    vir = configs[config-1].vir[0]
+    print(occ+1,vir+1)
+
+    if occ == vir:
+        print('Occupied and virtual orbital are the same; configuration does not involve a transition')
+        return vox
 
     a = 0
     # Loop over atoms
     for m in atoms:
-        print('  Atom ',atoms.index(m))
+        print('  Atom ',atoms.index(m)+1)
         minvox, maxvox = get_vrange(m, extra, nvox, minxyz, gap)
         at_index = at_types.index(m.elem)
         for i in range(minvox[0],maxvox[0]):
@@ -154,14 +158,18 @@ def gen_cube_config(config, at_types, atoms, mos, configs, params, extra, nvox, 
     vox = build_vox(nvox)
 
     # Set up for single excitations only
-    occ = configs[config-1].occ[0]-1
-    vir = configs[config-1].vir[0]-1
-    print(occ,vir)
+    occ = configs[config-1].occ[0]
+    vir = configs[config-1].vir[0]
+    print(occ+1,vir+1)
+
+    if occ == vir:
+        print('Occupied and virtual orbital are the same; configuration does not involve a transition')
+        return vox
 
     a = 0
     # Loop over atoms
     for m in atoms:
-        print('  Atom ',atoms.index(m))
+        print('  Atom ',atoms.index(m)+1)
         minvox, maxvox = get_vrange(m, extra, nvox, minxyz, gap)
         at_index = at_types.index(m.elem)
         for i in range(minvox[0],maxvox[0]):
@@ -192,7 +200,8 @@ def gen_cube_trans(ex, at_types, atoms, mos, configs, states, params, extra, nvo
                 for config in states[ex-1].coeff:
                     occ = configs[config[0]-1].occ[0]
                     vir = configs[config[0]-1].vir[0]
-                    coeff[-1][orbnum2] += (mos[vir].coeff[a+orbnum1] * mos[occ].coeff[a+orbnum2]) * config[1]
+                    if occ != vir:
+                        coeff[-1][orbnum2] += (mos[vir].coeff[a+orbnum1] * mos[occ].coeff[a+orbnum2]) * config[1]
                     #print config[0], occ, vir, out.mos[vir].coeff[a+orbnum1], out.mos[occ].coeff[a+orbnum2], config[1]
             #print coeff[-1]
         a += len(m.aotype)
@@ -200,7 +209,7 @@ def gen_cube_trans(ex, at_types, atoms, mos, configs, states, params, extra, nvo
     a = 0
     # Loop over atoms
     for m in atoms:
-        print('  Atom ',atoms.index(m))
+        print('  Atom ',atoms.index(m)+1)
         minvox, maxvox = get_vrange(m, extra, nvox, minxyz, gap)
         at_index = at_types.index(m.elem)
 
@@ -231,13 +240,14 @@ def gen_cube_exc(ex, at_types, atoms, mos, configs, states, params, extra, nvox,
         for config in states[ex-1].coeff:
             occ = configs[config[0]-1].occ[0]
             vir = configs[config[0]-1].vir[0]
-            coeff[-1] += (mos[vir].coeff[len(coeff)-1]**2 - mos[occ].coeff[len(coeff)-1]**2) * config[1]
+            if occ != vir:
+                coeff[-1] += (mos[vir].coeff[len(coeff)-1]**2 - mos[occ].coeff[len(coeff)-1]**2) * config[1]
     #print coeff
     
     a = 0
     # Loop over atoms
     for m in atoms:
-        print('  Atom ',atoms.index(m))
+        print('  Atom ',atoms.index(m)+1)
         minvox, maxvox = get_vrange(m, extra, nvox, minxyz, gap)
         at_index = at_types.index(m.elem)
 
@@ -255,7 +265,7 @@ def gen_cube_exc(ex, at_types, atoms, mos, configs, states, params, extra, nvox,
 # Write the cube file
 def write_cub(infilename, dtype, curr, vox, ats, at_types, params, nvox, minxyz, gap):
     if dtype == 0:
-        cub = open(infilename+'_orb_'+str(curr+1)+'.cub','w')
+        cub = open(infilename+'_orb_'+str(curr)+'.cub','w')
         cub.write(infilename + ' orbital ' + str(curr) + '\n\n')
     elif dtype == 1:
         cub = open(infilename+'_ctr_'+str(curr)+'.cub','w')
@@ -275,7 +285,8 @@ def write_cub(infilename, dtype, curr, vox, ats, at_types, params, nvox, minxyz,
     cub.write(str(nvox[1]).rjust(5) + ('%.6f'%0.0).rjust(12) + ('%.6f'%gap).rjust(12) + ('%.6f'%0.0).rjust(12) + '\n')
     cub.write(str(nvox[2]).rjust(5) + ('%.6f'%0.0).rjust(12) + ('%.6f'%0.0).rjust(12) + ('%.6f'%gap).rjust(12) + '\n')
     for m in ats:
-        cub.write(str(params[at_types.index(m.elem)][0]).rjust(5) + '    0.000000')
+        cub.write(str(cnst.atomic_symbol[m.elem]).rjust(5) + '    0.000000')
+        #cub.write(str(params[at_types.index(m.elem)][0]).rjust(5) + '    0.000000')
         cub.write(('%.6f'%(m.coord[0]/cnst.bohr2ang)).rjust(12) 
                   + ('%.6f'%(m.coord[1]/cnst.bohr2ang)).rjust(12) 
                   + ('%.6f'%(m.coord[2]/cnst.bohr2ang)).rjust(12) + '\n')
