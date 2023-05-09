@@ -268,10 +268,10 @@ def write_cub(infilename, dtype, curr, vox, ats, at_types, params, nvox, minxyz,
         cub = open(infilename+'_orb_'+str(curr)+'.cub','w')
         cub.write(infilename + ' orbital ' + str(curr) + '\n\n')
     elif dtype == 1:
-        cub = open(infilename+'_ctr_'+str(curr)+'.cub','w')
+        cub = open(infilename+'_ctrans_'+str(curr)+'.cub','w')
         cub.write(infilename + ' config_tdens ' + str(curr) + '\n\n')
     elif dtype == 2:
-        cub = open(infilename+'_conf_'+str(curr)+'.cub','w')
+        cub = open(infilename+'_config_'+str(curr)+'.cub','w')
         cub.write(infilename + ' config_dens ' + str(curr) + '\n\n')
     elif dtype == 3:
         cub = open(infilename+'_trans_'+str(curr)+'.cub','w')

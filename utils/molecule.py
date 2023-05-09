@@ -55,7 +55,8 @@ def read_types(tfilename):
             print('Type   %s' % line)
             types.append(line.split())
     except IOError:
-        print('%s not found; no types assigned' % tfilename)
+        #print('%s not found; no types assigned' % tfilename)
+        pass
 
     return types
 
@@ -801,7 +802,7 @@ class Molecule(object):
 
         #a_or =  (alpha[0][0][0] + alpha[0][1][1] + alpha[0][2][2]) / 3.0
 
-        al_out = open(outfilename + '.polariz', 'w')
+        al_out = open(outfilename + '_' + '%.4f'%omega + '.polarizabiliy', 'w')
         al_out.write('Omega = ' + '%.4f'%omega + ' eV   Gamma = ' + '%.4f'%gamma.imag + ' eV')
         al_out.write('\n\n')
 

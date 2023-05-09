@@ -15,7 +15,7 @@ types = []
 prog = ' '
 
 helpfile = """
-absorption.py -i <inputfile> -o <outputfile> -e <energy> -s <step> -t <type_file> 
+absorption.py -i <inputfile> -o <outputfile> -e <energy> -s <step> -g <gamma> 
 
 Required:
     -i    Base file name for input file
@@ -33,15 +33,6 @@ Optional:
     -s    Step size for absorption spectrum (eV)           Default = 0.02
     -g    Gamma (Lorentzian broadening factor)             Default = 0.1088 eV (= 0.004 au)
     
-    -t    Types file name. This enables decomposition of the total absorption 
-          spectrum into contributions from various components in the system.
-
-          Default = compute the absorption spectrum only, no types
-          Format:
-             Atom    1 20             From atoms 1-20 to 21-max
-             Attype  Ag               From Ag atoms to all other atoms
-             Orbtype Ag D             From Ag D to all others
-             Orb     D                From all D orbitals to all others
 """
 
 # Parse input options

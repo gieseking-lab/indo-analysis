@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------
-# Compute Raman cross-sections from changes to the INDO/CI static 
+# Compute Raman cross-sections from changes to the INDO/CI  
 # polarizabilities with geometric displacement along normal modes 
 # from another level of theory
 #
@@ -74,7 +74,7 @@ not fully converged with respect to the number of states in the SOS expression.
 try:
     options, remainder = getopt.getopt(sys.argv[1:],"hi:o:e:g:d:c:f:v:m:x:s:",[
         '--help','--input=','--output=','--energy=','--gamma=',
-        '--disp=','--coord=','--nstates=','--freqmin=', '--freqmax=',
+        '--displacement=','--coord=','--nstates=','--freqmin=', '--freqmax=',
         '--nstatesmin=','--nstatesmax=','--nstatesstep='])
 except getopt.GetoptError as err:
     print(str(err))
@@ -175,7 +175,7 @@ for v in vibs.modes:
             crs_avg.append([v.freq]) 
 
 # Write stick spectrum
-stick = open(outfilename+'.raman_stick_'+str(omega)+'_avg','w')
+stick = open(outfilename+'.raman_stick_'+str(omega),'w')
 for k in crs_avg:
     stick.write(string.rjust('%.3f'%k[0],10))
     if len(k) > 1:
@@ -202,7 +202,7 @@ for v in vibs.modes:
             #spectrum[j][1] += factor * v.crs_real
             #spectrum[j][2] += factor * v.crs_imag
 
-spec = open(outfilename+'.raman_lrntz_'+str(omega)+'_'+str(states),'w')
+spec = open(outfilename+'.raman_lrntz_'+str(omega),'w')
 for j in range(0,len(spectrum)):
     #print freq_min + freq_step*j, spectrum[j][0]
     spec.write(string.rjust('%.1f'%(freq_min + freq_step*j),8) + string.rjust(str(spectrum[j][0]),20) + '\n')

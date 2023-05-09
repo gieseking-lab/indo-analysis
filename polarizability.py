@@ -26,14 +26,14 @@ Required:
 
 Optional:
     -o    Base file name for output file                        Default = matches -i
-    -w    Energy at which polarizabilities are computed (eV)    Default = 0.0
+    -e    Energy at which polarizabilities are computed (eV)    Default = 0.0
     -g    Lifetime (broadening) of excited states (eV)          Default = 0.1088i (= 0.004 a.u.)
     -s    Number of states to include in SOS expression         Default = All states
 """
 
 # Parse input options
 try:
-    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:w:g:s:",['--help','--input=','--output=','--omega=','--gamma=','--states='])
+    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:e:g:s:",['--help','--input=','--output=','--energy=','--gamma=','--states='])
 except getopt.GetoptError as err:
     print(str(err))
     print(helpfile)
@@ -59,7 +59,7 @@ for opt, arg in options:
         if '.' in arg:
             arg = arg[:arg.rfind('.')]
         outfilename = arg
-    elif opt in ('-w','--omega'):
+    elif opt in ('-e','--energy'):
         omega = float(arg)
     elif opt in ('-g','--gamma'):
         gamma = complex(0.0,float(arg))
