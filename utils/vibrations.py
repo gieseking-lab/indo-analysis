@@ -1,21 +1,22 @@
-import string
+#import string
 import math
 import utils.constants as cnst
 from utils.molecule import Molecule
 
 class VibAll(object):
-    def __init__(self, vibfile='nmodes.inp', prog=' ',nrsfile=' '):
+    def __init__(self, vibfile='nmodes.inp', vmin=0, vmax=10000, nrsfile=' '):
         self.modes = []
         if nrsfile == ' ':
-            self.get_modes(vibfile)
+            self.get_modes(vibfile, vmin, vmax)
         else:
             self.get_nrs(nrsfile)
 
     # Get all vibrational information
-    def get_modes(self, vibfile):
+    def get_modes(self, vibfile, vmin, vmax):
         mfile = open(vibfile,'r')
         mline = mfile.readline()
         nmodes = 0
+        minmode, maxmode = None, None
         while len(mline) > 0:
             line = mline.split()
             curr_modes = len(line)
@@ -23,6 +24,10 @@ class VibAll(object):
                 self.modes.append(Vib(float(line[i]),nmodes+i+1))
                 # Temp edit for R6G
                 #self.modes.append(Vib(float(line[i]),nmodes+i+32))
+                if minmode == None and float(line[i]) >= vmin:
+                    minmode = nmodes + i + 1
+                if minmode != None and float(line[i]) <= vmax:
+                    maxmode = nmodes + i + 1
                 
             mline = mfile.readline()
             mline = mfile.readline()
@@ -35,7 +40,10 @@ class VibAll(object):
             mline = mfile.readline()
             mline = mfile.readline()
         mfile.close()
-        print('Modes ',len(self.modes),self.modes[0].index,self.modes[-1].index)
+        print('Total number of vibrational modes: ' + str(len(self.modes)))
+        print(str(maxmode-minmode+1) + ' modes in window from ' + 
+              str(vmin) + ' to ' + str(vmax) + ' cm-1 ' +
+              '(modes ' + str(minmode) + '-' + str(maxmode) + ')')
 
     # Read S factors from nrs file
     def get_nrs(self, nrsfile):
@@ -96,7 +104,7 @@ class Vib(object):
 
 
     # Compute the normalized derivative of alpha
-    def alpha_slope(self, outfilename, disp_str, omega=0.0, gamma=0.1088j, states=0, gamma2=0.0, types=[], usefreq=False, modefreq=0.0):
+    def alpha_slope(self, infilename, outfilename, disp_str, omega=0.0, gamma=0.1088j, states=0, usefreq=False, modefreq=0.0):
         if self.norm == 0.0:
             print('Error: Must compute norms of vibrational modes before polarizability derivatives')
         
@@ -106,27 +114,32 @@ class Vib(object):
 
         # Compute the displaced polarizabilities
         try:
-            out_minus, prog = Molecule(outfilename+'_'+str(self.index)+'_-'+disp_str+'.out')
-            out_plus,  prog = Molecule(outfilename+'_'+str(self.index)+'_' +disp_str+'.out')
+            out_minus = Molecule(infilename+'_'+str(self.index)+'_-'+disp_str+'.out')
+            out_plus  = Molecule(infilename+'_'+str(self.index)+'_' +disp_str+'.out')
         except IOError:
-            out_minus, prog = Molecule('mode'+str(self.index)+'-'+disp_str+'.out')
-            out_plus,  prog = Molecule('mode'+str(self.index)+'+'+disp_str+'.out')
+            out_minus = Molecule('mode'+str(self.index)+'-'+disp_str+'.out')
+            out_plus  = Molecule('mode'+str(self.index)+'+'+disp_str+'.out')
 
-        alpha_minus = out_minus.compute_alpha(omega, gamma, states, False, gamma2, types, usefreq, modefreq)
-        alpha_plus  =  out_plus.compute_alpha(omega, gamma, states, False, gamma2, types, usefreq, modefreq)
+        alpha_minus = out_minus.compute_alpha(omega, gamma, states, False, usefreq, modefreq)
+        alpha_plus  =  out_plus.compute_alpha(omega, gamma, states, False, usefreq, modefreq)
 
+        '''
         # Print changes in excited-state properties
         out_vib = open(outfilename+'_'+str(self.index)+'_' +disp_str+'.diff','w')
         
         for i in range(1,len(out_minus.states)):
             a = out_minus.states[i]
             b = out_plus.states[i]
-            out_vib.write(string.rjust('%.5f'%a.energy,10) + string.rjust('%.5f'%b.energy,10) + string.rjust('%.5f'%((a.energy-b.energy)/2/float(disp_str)),10))
-            out_vib.write(string.rjust('%.5f'%math.sqrt(a.osc/cnst.fosc_fact/a.energy),10) + string.rjust('%.5f'%math.sqrt(b.osc/cnst.fosc_fact/b.energy),10)) 
-            out_vib.write(string.rjust('%.3f'%((math.sqrt(a.osc/cnst.fosc_fact/a.energy) - math.sqrt(b.osc/cnst.fosc_fact/b.energy))/2/float(disp_str)),10))
+            out_vib.write(('%.5f'%a.energy).rjust(10) 
+                          + ('%.5f'%b.energy).rjust(10) 
+                          + ('%.5f'%((a.energy-b.energy)/2/float(disp_str))).rjust(10)
+                          + ('%.5f'%math.sqrt(a.osc/cnst.fosc_fact/a.energy)).rjust(10)
+                          + ('%.5f'%math.sqrt(b.osc/cnst.fosc_fact/b.energy)).rjust(10)
+                          + ('%.3f'%((math.sqrt(a.osc/cnst.fosc_fact/a.energy) 
+                                      - math.sqrt(b.osc/cnst.fosc_fact/b.energy))/2/float(disp_str))).rjust(10))
             out_vib.write('\n')
         out_vib.close()
-
+        '''
         #print alpha_minus, alpha_plus
 
         self.alpha_diff = []

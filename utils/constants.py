@@ -5,10 +5,10 @@
 
 import math
 
-fosc_fact = 0.0038
+fosc_fact = 0.003793
 
 # Energy units
-ev2cm  = 8065.73
+ev2cm  = 8065.76
 au2ev  = 27.2107
 au2cm  = 219474.63
 au2ang = 0.5291772

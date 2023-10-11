@@ -28,14 +28,11 @@ coord = ''
 nstates = 0
 nstatesmin, nstatesmax, nstatesstep = None, None, None
 avg = False
-vmin = 350
-vmax = 2500
-
-# Constants for later
-width = 20.0
-scale = 1E+34
-afac = width/(2.0*math.pi)
-bfac = width/2.0
+vmin = 350.0
+vmax = 2500.0
+vstep = 1.0
+vwidth = 20.0
+vibfile = 'nmodes.inp'
 
 helpfile = """
 raman.py -i <inputfile> -o <outputfile> -e <energy> -g <gamma> -d <displacement> -c <coordinate> -n <nrsfile> -f <minfreq> -v <maxfreq> -n <nstates> -m <min_nstates> -x <max_nstates> -s <step_nstates>
@@ -52,14 +49,17 @@ Required:
     
 
 Optional:
-    -o    Base file name for output file                          Default = matches -i
-    -e    Energy at which Raman intensities are computed (eV)     Default = 0.0
-    -g    Lifetime (broadening) for polarizabilities (eV)         Default = 0.1088 (= 0.004 a.u.)
-    -d    Displacement of geometries along vibrational modes (A)  Default = 0.01
-    -c    Coordinate along which to compute Raman intensities     Default = isotropic (alternatives are x, y, z)
-    -n    Number of states to include in SOS expression           Default = All states
-    -f    Minimum vibrational frequency of modes to use (cm-1)    Default = 350
-    -v    Maximum vibrational frequency of modes to use (cm-1)    Default = 2500
+    -o    Base file name for output file                            Default = matches -i
+    -f    File containing normal modes                              Default = nmodes.inp
+    -e    Energy at which Raman intensities are computed (eV)       Default = 0.0
+    -g    Lifetime (broadening) for polarizabilities (eV)           Default = 0.1088 (= 0.004 a.u.)
+    -d    Displacement of geometries along vibrational modes (A)    Default = 0.01
+    -c    Coordinate along which to compute Raman intensities       Default = isotropic (alternatives are x, y, z)
+    -n    Number of states to include in SOS expression             Default = All states
+    -v    Minimum vibrational frequency of modes to use (cm-1)      Default = 350
+    -w    Maximum vibrational frequency of modes to use (cm-1)      Default = 2500
+    -s    Step size for Lorentzian-broadened Raman spectrum (cm-1)  Default = 1
+    -b    Line width for Lorentzian-broadened Raman spectrum (cm-1) Default = 20
 
 To compute the Raman intensities averaged over a series of numbers of excited states
 instead of one number, use the following options. If one is used, all must be used.
@@ -67,14 +67,15 @@ This option is sometimes useful for large systems where the Raman intensities ar
 not fully converged with respect to the number of states in the SOS expression.
     -m    Minimum number of excited states to include in SOS expression
     -x    Maximum number of excited states to include in SOS expression
-    -s    Step size in number of excited states to include in SOS expression
+    -z    Step size in number of excited states to include in SOS expression
 """
 
 # Parse input options
 try:
-    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:e:g:d:c:f:v:m:x:s:",[
-        '--help','--input=','--output=','--energy=','--gamma=',
-        '--displacement=','--coord=','--nstates=','--freqmin=', '--freqmax=',
+    options, remainder = getopt.getopt(sys.argv[1:],"hi:o:f:e:g:d:c:v:w:s:b:m:x:z:",[
+        '--help','--input=','--output=','--modefile=','--energy=','--gamma=',
+        '--displacement=','--coord=','--nstates=',
+        '--freqmin=', '--freqmax=', '--freqstep=','--broadening=',
         '--nstatesmin=','--nstatesmax=','--nstatesstep='])
 except getopt.GetoptError as err:
     print(str(err))
@@ -100,6 +101,8 @@ for opt, arg in options:
         outfilename = arg
     elif opt in ('-e','--energy'):
         omega = float(arg)
+    elif opt in ('-f','--modefile'):
+        vibfile = arg
     elif opt in ('-g','--gamma'):
         gamma = complex(0.0,float(arg))
     elif opt in ('-d','--disp'):
@@ -108,15 +111,19 @@ for opt, arg in options:
         coord = arg
     elif opt in ('-n','--nstates'):
         nstates = int(arg)
-    elif opt in ('-f','--freqmin'):
+    elif opt in ('-v','--freqmin'):
         vmin = float(arg)
-    elif opt in ('-v','--freqmax'):
+    elif opt in ('-w','--freqmax'):
         vmax = float(arg)
+    elif opt in ('-s','--freqstep'):
+        vstep = float(arg)
+    elif opt in ('-b','--broadening'):
+        vwidth = float(arg)
     elif opt in ('-m','--nstatesmin'):
         nstatesmin = int(arg)
     elif opt in ('-x','--nstatesmax'):
         nstatesmax = int(arg)
-    elif opt in ('-s','--nstatesstep'):
+    elif opt in ('-z','--nstatesstep'):
         nstatesstep = int(arg)
 
 out = Molecule(infilename)
@@ -135,22 +142,32 @@ elif nstatesmin or nstatesmax or nstatesstep:
 else:
     states = [nstates]
 
-# Get basic info
+# Constants for Lorentzian-broadened spectrum
+scale = 1E+34
+afac = vwidth/(2.0*math.pi)
+bfac = vwidth/2.0
 
+# Get basic info
 crs_avg = []
 out.read_atoms()
-vibs = VibAll()
+vibs = VibAll(vibfile=vibfile, vmin=vmin, vmax=vmax)
+if avg and len(states) > 1:
+    print('                 ----------Raman intensity----------')
+    print('Mode  Frequency  Mean        Stdev       Stdev/Mean')
+else:
+    print('Mode  Frequency  Raman intensity')
 for v in vibs.modes:
     if v.freq > vmin and v.freq < vmax:
         crs_list = []
         ls = ''
         for s in states:
-            if s == states[0]: v.norm_mode(out.atoms)
-            v.alpha_slope(outfilename,disp_str,omega,gamma,s)
+            if s == states[0]: 
+                v.norm_mode(out.atoms)
+            v.alpha_slope(infilename,outfilename,disp_str,omega,gamma,s)
             v.raman_scat(coord)
             v.raman_cross(omega)
             crs_list.append(v.crs_tot[0])
-            ls += string.rjust(str(v.crs_tot[0]*scale*afac/bfac**2),17) + ' '
+            ls += str(v.crs_tot[0]*scale*afac/bfac**2).rjust(17) + ' '
 
         # Find avg and stdev
         if avg and len(states) > 1:
@@ -165,46 +182,58 @@ for v in vibs.modes:
             stdev = math.sqrt(stdev)
             #print ls
             if mean > 0.0 and stdev/mean > 0.33:
-                print(v.index, v.freq, mean*scale*afac/bfac**2, stdev*scale*afac/bfac**2, stdev/mean)
+                print(str(v.index).rjust(4) + ('%.3f' % v.freq).rjust(11) + 
+                      ('%.4e' % (mean*scale*afac/bfac**2)).rjust(12) + 
+                      ('%.4e' % (stdev*scale*afac/bfac**2)).rjust(12) +
+                      ('%.4e' % (stdev/mean)).rjust(12))
                 print(ls)
             else:
                 print(v.index, v.freq, mean*scale*afac/bfac**2, stdev*scale*afac/bfac**2)
-            crs_avg.append([v.freq,mean,stdev]) 
+            crs_avg.append([v.index,v.freq,mean,stdev]) 
         else:
-            print(v.index, v.freq, crs_list[0]*scale*afac/bfac**2)
-            crs_avg.append([v.freq]) 
+            print(str(v.index).rjust(4) + ('%.2f' % v.freq).rjust(11) 
+                  + ('%.4e' % (crs_list[0]*scale*afac/bfac**2)).rjust(12))
+            crs_avg.append([v.index,v.freq, crs_list[0]]) 
 
 # Write stick spectrum
 stick = open(outfilename+'.raman_stick_'+str(omega),'w')
+if len(crs_avg[0]) > 3:
+    stick.write('                 ----------Raman intensity----------\n')
+    stick.write('Mode  Frequency  Mean        Stdev       Stdev/Mean\n')
+else:
+    stick.write('Mode  Frequency  Raman intensity\n')
 for k in crs_avg:
-    stick.write(string.rjust('%.3f'%k[0],10))
-    if len(k) > 1:
-        stick.write(string.rjust(str(k[1]*scale*afac/bfac**2),20) + string.rjust(str(k[2]*scale*afac/bfac**2),20)) 
+    stick.write(str(k[0]).rjust(4) + ('%.3f'%k[1]).rjust(11))
+    if len(k) > 3:
+        stick.write(('%.4e'%(k[2]*scale*afac/bfac**2)).rjust(12) 
+                    + ('%.4e'%(k[3]*scale*afac/bfac**2)).rjust(12)) 
+    else: 
+        stick.write(('%.4e'%(k[2]*scale*afac/bfac**2)).rjust(12))
     stick.write('\n')
     #print k[1]*scale*afac/bfac**2, k[2]*scale*afac/bfac**2
 stick.close()
 
 # Set up array of zeros for spectrum
-freq_min = 1.0
-freq_max = 4000.0
 freq_step = 1.0
 spectrum = []
-for i in range(0,int((freq_max - freq_min)/freq_step + 1)):
+for i in range(0,int((vmax - vmin)/freq_step + 1)):
     spectrum.append([0.0,0.0,0.0])
 
 # Compute lorentzian-broadened spectrum
 for v in vibs.modes:
     if v.freq > vmin and v.freq < vmax:
         for j in range(0,len(spectrum)):
-            f_curr = freq_min + freq_step*j
+            f_curr = vmin + freq_step*j
             factor = scale * afac/( (f_curr - v.freq)**2 + bfac**2)
             spectrum[j][0] += factor * v.crs_tot[0]
             #spectrum[j][1] += factor * v.crs_real
             #spectrum[j][2] += factor * v.crs_imag
 
 spec = open(outfilename+'.raman_lrntz_'+str(omega),'w')
+spec.write('Frequency  Raman intensity\n')
 for j in range(0,len(spectrum)):
     #print freq_min + freq_step*j, spectrum[j][0]
-    spec.write(string.rjust('%.1f'%(freq_min + freq_step*j),8) + string.rjust(str(spectrum[j][0]),20) + '\n')
+    spec.write(('%.3f'%(vmin + freq_step*j)).rjust(9) 
+               + ('%.4e'%spectrum[j][0]).rjust(12) + '\n')
 spec.close()
 

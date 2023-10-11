@@ -24,9 +24,11 @@
 #
 #-------------------------------------------------------------------------
 
-import string,sys
+import string
+import sys
 import utils.constants as cnst
 import getopt
+import math
 
 # Default values
 infilename = ''
@@ -38,7 +40,7 @@ helpfile = """
 displace.py -i <inputfile> -o <outputfile> -m <mode> -d <displacement> -f <modesfile>
 
 Required:
-    -i    Base file name for input file
+    -i    Base file name of MOPAC input file containing the equilibrium geometry
 
 Optional:
     -o    Base file name for output file                          Default = matches -i
@@ -122,10 +124,19 @@ j = mode_ind*3 + 1
 mline = modes.readline()
 mline = modes.readline()
 mode_disp = []
+mode_norm = 0
 for i in range(0,len(xyzcoord)):
     line = mline.split()
     mode_disp.append([float(line[j]),float(line[j+1]),float(line[j+2])])
+    mode_norm += mode_disp[-1][0]**2 + mode_disp[-1][1]**2 + mode_disp[-1][2]**2
     mline = modes.readline()
+    
+# Check normalization and correct if needed
+mode_norm = math.sqrt(mode_norm)
+if abs(mode_norm - 1) > 0.005:
+    for i in range(len(mode_disp)):
+        for j in range(3):
+            mode_disp[i][j] /= mode_norm
 
 # Print new input file
 for i in range(0,len(xyzcoord)):

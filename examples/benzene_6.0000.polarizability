@@ -1,0 +1,18 @@
+Omega = 6.0000 eV   Gamma = 0.1088 eV
+
+Real polarizability directional components (au)
+        x           y           z
+x    605.8237     -0.0000      0.0000
+y     -0.0000    605.8243      0.0000
+z      0.0000      0.0000     14.8280
+
+Imag polarizability directional components (au)
+        x           y           z
+x    279.0527     -0.0000      0.0000
+y     -0.0000    279.0533      0.0000
+z      0.0000      0.0000      0.2436
+
+Orientationally averaged polarizability (au)
+    408.8253    186.1165    449.1965
+
+

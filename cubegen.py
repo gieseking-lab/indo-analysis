@@ -173,32 +173,32 @@ if dtype == 0:
     for mo_curr in range(mo_min-1,mo_max):
         vox = cubeutils.gen_cube_orb(mo_curr, out.at_types, out.atoms, out.mos, 
                                      par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(infilename, dtype, mo_curr+1, vox, out.atoms, out.at_types, 
+        cubeutils.write_cub(outfilename, dtype, mo_curr+1, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 elif dtype == 1:
     for config_curr in range(config_min,config_max+1):
         vox = cubeutils.gen_cube_ctrans(config_curr, out.at_types, out.atoms, out.mos, out.configs, 
                                         par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(infilename, dtype, config_curr, vox, out.atoms, out.at_types, 
+        cubeutils.write_cub(outfilename, dtype, config_curr, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 
 elif dtype == 2:
     for config_curr in range(config_min,config_max+1):
         vox = cubeutils.gen_cube_config(config_curr, out.at_types, out.atoms, out.mos, out.configs, 
                                         par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(infilename, dtype, config_curr, vox, out.atoms, out.at_types, 
+        cubeutils.write_cub(outfilename, dtype, config_curr, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 elif dtype == 3:
     for ex_curr in range(ex_min,ex_max+1):
         vox = cubeutils.gen_cube_trans(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
                                        out.states, par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(infilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
+        cubeutils.write_cub(outfilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 else:
     for ex_curr in range(ex_min,ex_max+1):
         vox = cubeutils.gen_cube_exc(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
                                        out.states, par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(infilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
+        cubeutils.write_cub(outfilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
                             par.params, nvox, minxyz, gap)
 
 

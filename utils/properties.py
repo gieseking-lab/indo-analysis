@@ -119,6 +119,7 @@ class State(object):
     def calc_tdip(self, pol):
         for i in range(0,3):
             self.tdip[i] = pol[i]*math.sqrt(self.osc/(cnst.fosc_fact*self.energy))
+        #print(self.tdip, self.energy * cnst.ev2cm)
 
     def calc_osc(self, tdip):
         self.tdip = tdip

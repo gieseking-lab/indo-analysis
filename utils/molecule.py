@@ -802,7 +802,7 @@ class Molecule(object):
 
         #a_or =  (alpha[0][0][0] + alpha[0][1][1] + alpha[0][2][2]) / 3.0
 
-        al_out = open(outfilename + '_' + '%.4f'%omega + '.polarizabiliy', 'w')
+        al_out = open(outfilename + '_' + '%.4f'%omega + '.polarizability', 'w')
         al_out.write('Omega = ' + '%.4f'%omega + ' eV   Gamma = ' + '%.4f'%gamma.imag + ' eV')
         al_out.write('\n\n')
 
