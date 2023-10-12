@@ -1,1 +1,4 @@
-.spyproject*
+.spyproject/
+test/
+*.pyc
+*/__pycache__*

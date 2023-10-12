@@ -128,7 +128,7 @@ def gen_cube_ctrans(config, at_types, atoms, mos, configs, params, extra, nvox, 
 
     if occ == vir:
         print('Occupied and virtual orbital are the same; configuration does not involve a transition')
-        return vox
+        return None
 
     a = 0
     # Loop over atoms
@@ -164,7 +164,7 @@ def gen_cube_config(config, at_types, atoms, mos, configs, params, extra, nvox, 
 
     if occ == vir:
         print('Occupied and virtual orbital are the same; configuration does not involve a transition')
-        return vox
+        return None
 
     a = 0
     # Loop over atoms
@@ -264,6 +264,8 @@ def gen_cube_exc(ex, at_types, atoms, mos, configs, states, params, extra, nvox,
 
 # Write the cube file
 def write_cub(infilename, dtype, curr, vox, ats, at_types, params, nvox, minxyz, gap):
+    if not vox:
+        return
     if dtype == 0:
         cub = open(infilename+'_orb_'+str(curr)+'.cub','w')
         cub.write(infilename + ' orbital ' + str(curr) + '\n\n')

@@ -190,16 +190,24 @@ elif dtype == 2:
                             par.params, nvox, minxyz, gap)
 elif dtype == 3:
     for ex_curr in range(ex_min,ex_max+1):
-        vox = cubeutils.gen_cube_trans(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
-                                       out.states, par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(outfilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
-                            par.params, nvox, minxyz, gap)
+        if ex_curr == 1:
+            print("Error: Transition density from the ground state (state 1) to state 1 is not defined")
+            print("For the first excited state, use state 2")
+        else:
+            vox = cubeutils.gen_cube_trans(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
+                                           out.states, par.params, extra, nvox, minxyz, gap)
+            cubeutils.write_cub(outfilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
+                                par.params, nvox, minxyz, gap)
 else:
     for ex_curr in range(ex_min,ex_max+1):
-        vox = cubeutils.gen_cube_exc(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
-                                       out.states, par.params, extra, nvox, minxyz, gap)
-        cubeutils.write_cub(outfilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
-                            par.params, nvox, minxyz, gap)
+        if ex_curr == 1:
+            print("Error: Change in density from the ground state (state 1) to state 1 is zero")
+            print("For the first excited state, use state 2")
+        else:
+            vox = cubeutils.gen_cube_exc(ex_curr, out.at_types, out.atoms, out.mos, out.configs, 
+                                           out.states, par.params, extra, nvox, minxyz, gap)
+            cubeutils.write_cub(outfilename, dtype, ex_curr, vox, out.atoms, out.at_types, 
+                                par.params, nvox, minxyz, gap)
 
 
 

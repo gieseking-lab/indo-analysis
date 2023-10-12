@@ -79,6 +79,8 @@ excited-state properties. The .cub files can be read by a number of visualizatio
 |  -v, --voxelsize |   Size of voxels, in Angstroms                     | 0.25 A
 |  -e, --extra     |   Size of extra space surrounding the molecule     | 3.00 A
 
+Note: For excited states, the ground state is defined as state 1, so the first excited state is state 2.
+
 The parameter file is only necessary if MOPAC was run using `EXTERNAL=<filename>`, and if the orbital exponents were changed to non-default values in that file (any parameter that starts with Z). The parameter file used here should be the same as the parameter file used to run MOPAC.
 
 Output files:
@@ -152,12 +154,13 @@ Requires:
 | Option | Usage | Default |
 | --- | --- | --- |
   -e, --energy       | Energy at which Raman intensities are computed (eV)     | 0.0
+  -f, --modefile     | File containing normal modes                            | nmodes.inp
   -g, --gamma        | Lifetime (broadening) of excited states (eV)            | 0.1088 eV ( = 0.004 au)
   -d, --displacement | RMS displacement of geometries along vibrational modes (A). Positive values are in the positive direction of the mode coordinate, and negative values are in the negative direction of the mode coordinate.  | 0.01
   -c, --coord        | Coordinate along which to compute Raman intensities     | isotropic (alternatives are x, y, z)
   -n, --nstates      | Number of states to include in SOS expression           | All states
-  -f, --freqmin      | Minimum vibrational frequency of modes to compute (cm-1). This frequency is also used as the minimum frequency of the computed Raman spectrum.    | 350 
-  -v, --freqmax      | Maximum vibrational frequency of modes to compute (cm-1). This frequency is also used as the maximum frequency of the computed Raman spectrum.    | 2500 
+  -v, --freqmin      | Minimum vibrational frequency of modes to compute (cm-1). This frequency is also used as the minimum frequency of the computed Raman spectrum.    | 350 
+  -w, --freqmax      | Maximum vibrational frequency of modes to compute (cm-1). This frequency is also used as the maximum frequency of the computed Raman spectrum.    | 2500 
   -s, --freqstep     | Step size for the Lorenztian-broadened Raman spectrum (cm-1) | 1
   -b, --broadening   | Line width (broadening) for Lorentzian-broadened Raman spectrum (cm-1) | 20
 
@@ -178,9 +181,9 @@ Output files:
 
 ### Benzene: Absorption spectra, orbitals, transition densities, and polarizability
 
-To use the scripts, first run MOPAC2016 using the input file `benzene.mop` to get `benzene.out`.
+To use the scripts, we first run MOPAC2016 using the input file `benzene.mop` to get `benzene.out`.
 
-To compute the absorption spectrum, use:
+To compute the absorption spectrum, we then use:
 
 ```
 python absorption.py -i examples/benzene
@@ -188,7 +191,7 @@ python absorption.py -i examples/benzene
 
 to get the output files `benzene.orb`, `benzene.osc`, and `benzene.sigma`. 
 
-From `benzene.osc`, the first absorption peak comes from a doubly degenerate set of states at 6.2211 eV, states 4 and 5. Looking at `benzene.out`, state 4 is primarily a linear combination of configurations 4 and 5.
+From `benzene.osc`, the first absorption peak comes from a doubly degenerate set of states at 6.2211 eV, states 4 and 5. Looking at `benzene.out`, state 4 is primarily a linear combination of configurations 4 and 5, with a smaller contribution from configuration 33 that we will ignore. The three printed configurations sum to 96.29% of the total contributions to this state; if `WRTCONF` was set to a lower value in `benzene.mop`, more of the minor contributions would be printed.
 
 ```
 State    4  6.2211     CI coeff  CI percent
@@ -198,7 +201,7 @@ State    4  6.2211     CI coeff  CI percent
  Total coeff printed             0.96288339
 ```
  
-Looking earlier in `benzene.out`, configuration 4 is a HOMO->LUMO transition (MO 15 to 16), and configuration 5 is a HOMO-1->LUMO+1 transition (MO 14 to 17)
+Looking earlier in `benzene.out`, configuration 4 is a HOMO->LUMO transition (MO 15 to 16), and configuration 5 is a HOMO-1->LUMO+1 transition (MO 14 to 17):
 
 ```
  CI excitations=  226:        =226
@@ -219,11 +222,15 @@ Based on this information, we can use `cubegen.py` to generate cube files of MOs
 python cubegen.py -i examples/benzene -t orbital -m 14 -x 17
 ```
 
-This produces files `benzene_orb_14.cub`, `benzene_orb_15.cub`, `benzene_orb_16.cub`, and `benzene_orb_17.cub`. These files can be visualized using Avogadro, GaussView, and many other visualization packages. We can also generate cube files for the transition densities for configuration 4 (15->16) and 5 (14->17), to produce files `benzene_ctrans_4.cub` and `benzene_ctrans_5.cub`:
+This produces files `benzene_orb_14.cub`, `benzene_orb_15.cub`, `benzene_orb_16.cub`, and `benzene_orb_17.cub`. These files can be visualized using VMD, Avogadro, GaussView, and many other visualization packages. Orbitals 14 and 15 have the expected shapes for the doubly degenerate HOMO of benzene, and orbitals 16 and 17 have the expected shapes for the doubly degenerate LUMO.
+
+We can also generate cube files for the transition densities for configuration 4 (15->16) and 5 (14->17), to produce files `benzene_ctrans_4.cub` and `benzene_ctrans_5.cub`:
 
 ```
 python cubegen.py -i examples/benzene -t ctrans -m 4 -x 5
 ```
+
+Based on visualizing these transition densities, configuration 4 has negative transition density on two carbons with positive y coordinates and positive transition density on two carbons with negative y coordinates. Configuration 5 has alternating positive and negative transition densities around the ring, but the largest positive and negative transition densities are on the carbon atoms with the largest +/- y coordinates.
 
 We can also compute the transition density for excited state 4, to produce `benzene_trans_4.cub`:
 
@@ -231,7 +238,18 @@ We can also compute the transition density for excited state 4, to produce `benz
 python cubegen.py -i examples/benzene -t trans -m 4
 ```
 
-The polarizability of benzene depends on the frequency/energy of light used to compute it. MOPAC2016 outputs the static (zero-frequency) polarizability of benzene as:
+Because of how the transition densities from the two configurations combine, the overall transition density for this state is negative for all carbon atoms with positive y coordinates and positive for all carbon atoms with negative y coordinates. This implies that this state should have a large transition dipole moment along the y axis, which can be seen in `benzene.out` as a large oscillator strength with a polarization along y:
+
+```
+  CI trans.  energy frequency wavelength oscillator ---------polarization---------    dipole   ------components----- 
+ st.  symm.    eV      cm-1       nm      strength       x          y         z       moment     x       y       z 
+
+   2      4.7082902    37975.    263.33  0.000000                                   0.000000   0.000  -0.000  -0.000
+   3      5.3612330    43241.    231.26  0.000000                                   0.000000   0.000  -0.000   0.000
+   4      6.2211294    50177.    199.29  0.872452  -0.000049   1.000000  -0.000000  0.000000   0.000  -0.000   0.000
+```
+
+We can also compute the polarizability of benzene, which depends on the frequency/energy of light at which we are computing the polarizability. MOPAC2016 outputs the static (zero-frequency) polarizability of benzene as:
 
 ```
  Polarizability (au  ) xx=   72.32 xy=    0.00 yy=   72.32 xz=    0.00 yz=   -0.00 zz=   10.64
@@ -243,11 +261,15 @@ We can compute the equivalent value with `polarizability.py` by setting gamma eq
 python polarizability.py -i examples/benzene -g 0
 ```
 
-The real polarizability written to `benzene_0.0000.polarizability` is nearly identical to the ones printed by MOPAC2016, and the imaginary part is zero. At an energy relatively close to the first absorption peak, the real polarizability is much larger, and the imaginary polarizability (related to the intensity of absorption) is non-negligible:
+The real polarizability written to `benzene_0.0000.polarizability` is nearly identical to the ones printed by MOPAC2016, and the imaginary part is zero. 
+
+We can also compute the polarizability at an energy relatively close to the first absorption peak: 
 
 ```
 python polarizability.py -i examples/benzene -e 6.0
 ```
+
+At 6 eV, the output file shows that real polarizability is much larger, and the imaginary polarizability (related to the intensity of absorption) is non-negligible:
 
 On resonance with the main absorbing state, the real polarizability is small, and the imaginary polarizability is very large:
 
