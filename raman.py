@@ -106,6 +106,7 @@ for opt, arg in options:
     elif opt in ('-g','--gamma'):
         gamma = complex(0.0,float(arg))
     elif opt in ('-d','--disp'):
+        disp_str = arg
         disp = float(arg)
     elif opt in ('-c','--coord'):
         coord = arg
@@ -181,14 +182,20 @@ for v in vibs.modes:
             stdev /= len(crs_list)-1
             stdev = math.sqrt(stdev)
             #print ls
-            if mean > 0.0 and stdev/mean > 0.33:
+            if mean > 0.0 and stdev/mean > 0.5:
                 print(str(v.index).rjust(4) + ('%.3f' % v.freq).rjust(11) + 
                       ('%.4e' % (mean*scale*afac/bfac**2)).rjust(12) + 
                       ('%.4e' % (stdev*scale*afac/bfac**2)).rjust(12) +
-                      ('%.4e' % (stdev/mean)).rjust(12))
-                print(ls)
+                      ('%.3f' % (stdev/mean)).rjust(12))
+                print('  Caution: Mode ' + str(v.index) + 
+                      ' has large variation in Raman intensity for different numbers of states in SOS')
+                print('  States   Raman intensity')
+                for j in range(0,len(states)):
+                    print(str(states[j]).rjust(8) + ('%.4e' % (crs_list[j]*scale*afac/bfac**2)).rjust(12))
             else:
-                print(v.index, v.freq, mean*scale*afac/bfac**2, stdev*scale*afac/bfac**2)
+                print(str(v.index).rjust(4) + ('%.3f' % v.freq).rjust(11) + 
+                      ('%.4e' % (mean*scale*afac/bfac**2)).rjust(12) + 
+                      ('%.4e' % (stdev*scale*afac/bfac**2)).rjust(12))
             crs_avg.append([v.index,v.freq,mean,stdev]) 
         else:
             print(str(v.index).rjust(4) + ('%.2f' % v.freq).rjust(11) 
@@ -214,16 +221,15 @@ for k in crs_avg:
 stick.close()
 
 # Set up array of zeros for spectrum
-freq_step = 1.0
 spectrum = []
-for i in range(0,int((vmax - vmin)/freq_step + 1)):
+for i in range(0,int((vmax - vmin)/vstep + 1)):
     spectrum.append([0.0,0.0,0.0])
 
 # Compute lorentzian-broadened spectrum
 for v in vibs.modes:
     if v.freq > vmin and v.freq < vmax:
         for j in range(0,len(spectrum)):
-            f_curr = vmin + freq_step*j
+            f_curr = vmin + vstep*j
             factor = scale * afac/( (f_curr - v.freq)**2 + bfac**2)
             spectrum[j][0] += factor * v.crs_tot[0]
             #spectrum[j][1] += factor * v.crs_real
@@ -233,7 +239,7 @@ spec = open(outfilename+'.raman_lrntz_'+str(omega),'w')
 spec.write('Frequency  Raman intensity\n')
 for j in range(0,len(spectrum)):
     #print freq_min + freq_step*j, spectrum[j][0]
-    spec.write(('%.3f'%(vmin + freq_step*j)).rjust(9) 
+    spec.write(('%.3f'%(vmin + vstep*j)).rjust(9) 
                + ('%.4e'%spectrum[j][0]).rjust(12) + '\n')
 spec.close()
 
