@@ -125,7 +125,7 @@ Requires:
    O    -0.00  -0.00  -0.33
 ```
 
-This format matches the default format ADF uses to print vibrational modes. In the nmodes file, the number of lines matters, but the exact spacing on each line does not. The frequency of the mode (in cm-1) is listed first, and the x, y, and z displacements for each atom are listed beneath the divider. The divider line needs to be present, but its content does not matter at all. The xyz displacements should be normalized such that the squares of the displacements sum to 1. If more than 3 modes are included in the file, there must be exactly 3 modes listed side-by-side. Between each block of 3 modes, there must be exactly 2 blank lines.
+This format matches the default format ADF uses to print vibrational modes. In the nmodes file, the number of lines matters, but the exact spacing on each line does not. The frequency of the mode (in cm-1) is listed first, and the x, y, and z displacements for each atom are listed beneath the divider. The divider line needs to be present, but its content does not matter at all. If more than 3 modes are included in the file, there must be exactly 3 modes listed side-by-side. Between each block of 3 modes, there must be exactly 2 blank lines.
 
 | Option | Usage | Default |
 | --- | --- | --- |
