@@ -1,5 +1,5 @@
 # INDO analysis scripts for MOPAC2016
-Rebecca Gieseking, 2023
+Rebecca Gieseking, 2024
 
 In summer 2020, with the help of James Stewart, I incorporated INDO/CI into the public release of MOPAC2016. This repository contains several useful analysis scripts for INDO/CI calculations. All scripts are written in Python 3 and use only standard libraries.
 
